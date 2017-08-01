@@ -40,7 +40,7 @@ object Prog1 {
     
     query.awaitTermination()
 
-    println("Needine.com\nNetwork Traffic Status V0.2")
+    //println("Needine.com\nNetwork Traffic Status V0.2")
   }
   
 }
