@@ -21,7 +21,7 @@ import org.apache.spark.mllib.linalg.Vectors
 
 object StreamingKMeans {
   
-  val checkpointDirectory = "_a792d" // Parece que aqui hay algun problema y hay que añadir un digito cada vez que se ejecuta
+  val checkpointDirectory = "_ao9iuhg33d" // Parece que aqui hay algun problema y hay que añadir un digito cada vez que se ejecuta
 
   
   def functionToCreateContext():StreamingContext = {
@@ -57,24 +57,34 @@ object StreamingKMeans {
     val testSteam = stream.filter(record => record.topic == "test")
     //testSteam.map(record => (record.topic, record.key, record.value)).print()
     
-    //val trainingData = stream.map(record => (record.key, record.value)).map(_._2).map(Vectors.parse)
-    val trainingData = stream.map(record => (record.key, record.value)).map(_._2).map(s => Vectors.dense(s.split(' ').map(_.toDouble)))
-
+    val trainingData = trainSteam.map(record => (record.key, record.value)).map(_._2).map(s => Vectors.dense(s.split(' ').map(_.toDouble)))
 
     //trainingData.print()
-    
-    //val testData = stream.map(record => (record.key, record.value)).map(_._2).map(LabeledPoint.parse)
-    val testData = stream.map(record => (record.key, record.value)).map(_._2).map(LabeledPoint.parse)
+    val testData = testSteam.map(record => (record.key, record.value)).map(_._2).map(s => Vectors.dense(s.split(' ').map(_.toDouble)))
 
-    
+    /*
+    //val testData = stream.map(record => (record.key, record.value)).map(_._2).map(LabeledPoint.parse)
+    val testData = testSteam.map(record => (record.key, record.value)).map(_._2).map(_.split(";")).map{arr =>
+      LabeledPoint(arr(0).toDouble, Vectors.dense(arr(1).split(' ').map(_.toDouble)))    
+    }
+    */
     val model = new StreamingKMeans()
-      .setK(10)
+      .setK(20)
       .setDecayFactor(0.8)
-      .setRandomCenters(3, 0.0)
+      .setRandomCenters(1, 0.0)
     
     model.trainOn(trainingData)
-    //model.predictOnValues(testData.map(lp => (lp.label, lp.features))).print()
+    val latestModel = model.latestModel()
+    println(latestModel.clusterCenters)
+    
+    
+    val res = model.predictOn(testData)
 
+    
+    //val res = model.predictOnValues(testData.map(lp => (lp.label, lp.features)))
+    
+    res.print()
+    
     
     
     
