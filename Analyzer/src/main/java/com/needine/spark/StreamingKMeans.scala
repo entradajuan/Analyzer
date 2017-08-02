@@ -74,9 +74,6 @@ object StreamingKMeans {
     
     context.start
     context.awaitTermination()  
-    
-    
 
   }
-  
 }
