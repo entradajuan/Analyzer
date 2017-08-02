@@ -11,15 +11,17 @@ import kafka.serializer.StringDecoder
 import org.apache.kafka.common.serialization.StringDeserializer
 
 
-import org.apache.spark.mllib.clustering.StreamingKMeans
-import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.mllib.clustering._
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.streaming.{Seconds, StreamingContext}
+import org.apache.spark.mllib.linalg.Vectors
+
+//import org.apache.spark.ml.linalg.Vectors
 
 
 object StreamingKMeans {
   
-  val checkpointDirectory = "_check3w4g45gf26" // Parece que aqui hay algun problema y hay que añadir un digito cada vez que se ejecuta
+  val checkpointDirectory = "_a792d" // Parece que aqui hay algun problema y hay que añadir un digito cada vez que se ejecuta
 
   
   def functionToCreateContext():StreamingContext = {
@@ -31,21 +33,7 @@ object StreamingKMeans {
     
   }
   
-  
-  def updateFunc(values: Seq[Int], state: Option[Int]): Option[Int] = {
-    val currentCount = values.sum
-    val previousCount = state.getOrElse(0)
-    Some(currentCount + previousCount)  
-  }
-  
   def main (args: Array[String]):Unit ={
-
-    //val conf = new SparkConf().setMaster("local[*]").setAppName("KafkaWordCount")
-    //val ssc = new StreamingContext(conf, Seconds(10))
-    
-    //val kafkaParams = Map("metadata.broker.list" -> "localhost:9092")
-    //val topics = List("test").toSet
-    //val lines = KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](ssc, kafkaParams, topics).map(_._2)
     
     val context = StreamingContext.getOrCreate(checkpointDirectory, functionToCreateContext _)
     
@@ -58,46 +46,35 @@ object StreamingKMeans {
       "enable.auto.commit" -> (false: java.lang.Boolean)
     )
     
-    val topics = Array("test", "connect-test")
+    val topics = Array("test", "training")
     val stream = KafkaUtils.createDirectStream[String, String](
       context,
       PreferConsistent,
       Subscribe[String, String](topics, kafkaParams)
     )
     
-    stream.map(record => (record.topic, record.key, record.value)).print()
+    val trainSteam = stream.filter(record => record.topic == "training")
+    val testSteam = stream.filter(record => record.topic == "test")
+    //testSteam.map(record => (record.topic, record.key, record.value)).print()
     
-    //val lines = stream.map(record => (record.key, record.value)).map(_._2)
     //val trainingData = stream.map(record => (record.key, record.value)).map(_._2).map(Vectors.parse)
+    val trainingData = stream.map(record => (record.key, record.value)).map(_._2).map(s => Vectors.dense(s.split(' ').map(_.toDouble)))
+
+
+    //trainingData.print()
     
+    //val testData = stream.map(record => (record.key, record.value)).map(_._2).map(LabeledPoint.parse)
+    val testData = stream.map(record => (record.key, record.value)).map(_._2).map(LabeledPoint.parse)
+
     
-    //val trainingData = ssc.textFileStream(args(0)).map(Vectors.parse)
-    //val testData = ssc.textFileStream(args(1)).map(LabeledPoint.parse)
-    
-    /*
-    val words = lines.flatMap { l => l.split(" ") }
-  
-    val pairs = words.map { x => (x, 1) }
-    val wordsCount = pairs.reduceByKey(_ + _)
-    
-    //wordsCount.print()
-    
-    
-    
-    // Now I have to update the TOTAL results
-    val globalCountStream = wordsCount.updateStateByKey(updateFunc)
-    globalCountStream.print()
-    */
-    
-    /*
     val model = new StreamingKMeans()
-      .setK(3)
-      .setDecayFactor(1.0)
-      .setRandomCenters(5, 0.0)
+      .setK(10)
+      .setDecayFactor(0.8)
+      .setRandomCenters(3, 0.0)
     
     model.trainOn(trainingData)
-    model.predictOnValues(testData.map(lp => (lp.label, lp.features))).print()
-    */    
+    //model.predictOnValues(testData.map(lp => (lp.label, lp.features))).print()
+
     
     
     
