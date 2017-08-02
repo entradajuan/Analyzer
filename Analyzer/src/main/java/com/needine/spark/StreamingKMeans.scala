@@ -1,6 +1,5 @@
 package com.needine.spark
 
-
 import org.apache.spark._
 import org.apache.spark.streaming.{StreamingContext, Seconds, Minutes, Time}
 import org.apache.spark.streaming.dstream._
@@ -9,20 +8,14 @@ import org.apache.spark.streaming.kafka010.LocationStrategies.PreferConsistent
 import org.apache.spark.streaming.kafka010.ConsumerStrategies.Subscribe
 import kafka.serializer.StringDecoder
 import org.apache.kafka.common.serialization.StringDeserializer
-
-
 import org.apache.spark.mllib.clustering._
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 import org.apache.spark.mllib.linalg.Vectors
 
-//import org.apache.spark.ml.linalg.Vectors
-
-
 object StreamingKMeans {
   
-  val checkpointDirectory = "_ao9iuhg33d" // Parece que aqui hay algun problema y hay que añadir un digito cada vez que se ejecuta
-
+  val checkpointDirectory = "_123" 
   
   def functionToCreateContext():StreamingContext = {
     val conf = new SparkConf().setMaster("local[*]").setAppName("Streaming KMeans Example")
@@ -30,7 +23,6 @@ object StreamingKMeans {
     
     ssc.checkpoint(checkpointDirectory)   // set checkpoint directory
     ssc
-    
   }
   
   def main (args: Array[String]):Unit ={
@@ -58,7 +50,6 @@ object StreamingKMeans {
     //testSteam.map(record => (record.topic, record.key, record.value)).print()
     
     val trainingData = trainSteam.map(record => (record.key, record.value)).map(_._2).map(s => Vectors.dense(s.split(' ').map(_.toDouble)))
-
     //trainingData.print()
     val testData = testSteam.map(record => (record.key, record.value)).map(_._2).map(s => Vectors.dense(s.split(' ').map(_.toDouble)))
 
@@ -77,16 +68,9 @@ object StreamingKMeans {
     val latestModel = model.latestModel()
     println(latestModel.clusterCenters)
     
-    
     val res = model.predictOn(testData)
-
-    
     //val res = model.predictOnValues(testData.map(lp => (lp.label, lp.features)))
-    
     res.print()
-    
-    
-    
     
     context.start
     context.awaitTermination()  
