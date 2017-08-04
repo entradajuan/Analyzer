@@ -12,7 +12,7 @@ object Prog1 {
       .appName("Structured Streaming Network Traffic Analysis")
       .config("spark.master", "local[*]")
       .getOrCreate()
-    
+   
     import spark.implicits._
     import org.apache.spark.sql.Encoders    
     import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder

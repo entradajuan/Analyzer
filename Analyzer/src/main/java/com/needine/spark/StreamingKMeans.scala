@@ -12,15 +12,15 @@ import org.apache.spark.mllib.clustering._
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.sql.SparkSession
 
 object StreamingKMeans {
   
-  val checkpointDirectory = "_123" 
+  val checkpointDirectory = "_1f467y8ujg3" 
   
   def functionToCreateContext():StreamingContext = {
     val conf = new SparkConf().setMaster("local[*]").setAppName("Streaming KMeans Example")
     val ssc = new StreamingContext(conf, Seconds(2))
-    
     ssc.checkpoint(checkpointDirectory)   // set checkpoint directory
     ssc
   }
@@ -60,20 +60,32 @@ object StreamingKMeans {
     }
     */
     val model = new StreamingKMeans()
-      .setK(20)
-      .setDecayFactor(0.8)
+      .setK(3)
+      .setDecayFactor(0.05)
       .setRandomCenters(1, 0.0)
     
     model.trainOn(trainingData)
     val latestModel = model.latestModel()
-    println(latestModel.clusterCenters)
     
     val res = model.predictOn(testData)
     //val res = model.predictOnValues(testData.map(lp => (lp.label, lp.features)))
     res.print()
+    //val cl = clusterArray(0)
+    //println(cl)
+    //clusterArray.print()
+    res.foreachRDD { rdd =>  
+      val spark = SparkSession.builder.config(rdd.sparkContext.getConf).getOrCreate()
+      import spark.implicits._      
+      val clusterArray = latestModel.clusterCenters 
+      clusterArray.foreach { println }
+      
+    }
     
     context.start
     context.awaitTermination()  
 
+
+    println("Hello world!!")
+    
   }
 }
