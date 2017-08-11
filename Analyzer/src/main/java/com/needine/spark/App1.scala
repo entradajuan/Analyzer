@@ -2,9 +2,8 @@ package com.needine.spark
 
 import org.apache.spark.sql.SparkSession
 
-object Prog1 {
+object App1 {
   case class Trace (ori: String, des: String, pro: String, bytes: String)
-   
   def cleansingOri(cad: String): String = {
     if (cad == null) {return "NADA"}
     if (cad.split("→").length < 1) {return "NADA"}
@@ -37,9 +36,8 @@ object Prog1 {
     cad.split("→")(1).split(" +")(3)+";;"
   }
   
-  
   def main(args: Array[String]) = {
-
+     
     val spark = SparkSession
       .builder()
       .appName("Structured Streaming Network Traffic Analysis")
@@ -53,7 +51,7 @@ object Prog1 {
     import org.apache.spark.sql.functions._
     
     spark.sparkContext.setLogLevel("WARN")
-
+       
     val df = spark
       .readStream
       .format("kafka")
@@ -63,6 +61,9 @@ object Prog1 {
     val lines = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)").as[(String, String)]
 
     val packetsDS = lines.map{cad => Trace(cleansingOri(cad._2), cleansingDest(cad._2), cleansingProt(cad._2),cleansingBytes(cad._2)/*, checkBytes(cad._2.split("→")(1).split(" ")(3))*/)}
+    
+    
+    
     
     val query = packetsDS.toDF.withColumn("x", concat($"ori",  $"des", $"pro", $"bytes")/*+ ";" + $"des" + ";" +$"pro"*/ )
       .select($"ori" as "key", $"x" as "value")
@@ -77,7 +78,7 @@ object Prog1 {
     query.awaitTermination()
     
     //Needine.com
-    //Network Traffic Status V0.1
+    //Network Traffic Status V0.2
   }
-  
 }
+  
