@@ -13,6 +13,8 @@ import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.sql.SparkSession
+import java.util.function.ToDoubleFunction
+import shapeless.ops.nat.ToInt
 
 object StreamingKMeans {
   
@@ -24,6 +26,23 @@ object StreamingKMeans {
     //ssc.checkpoint(checkpointDirectory)   // set checkpoint directory
     ssc
   }
+  
+  
+  def getBytes(arr: Array[String]):  Double ={
+    if ((arr==null) ){
+      0.0
+    }else if (arr.size<4) {
+      0.0
+    }else {
+      if (arr(3)=="") {
+         0.0
+      } else {
+        if (arr(3) matches "[\\+\\-0-9.e]+") arr(3).toDouble
+        else 0.0
+      }
+    }
+  }
+  
   
   def main (args: Array[String]):Unit ={
     
@@ -50,7 +69,7 @@ object StreamingKMeans {
     //testSteam.map(record => (record.topic, record.key, record.value)).print()
     
     //val trainingData = trainSteam.map(record => (record.key, record.value)).map(_._2).map(s => Vectors.dense(s.split(' ').map(_.toDouble)))
-    val trainingData = trainSteam.map(record => (record.key, record.value)).map(_._2).map(_.split(';')).map(s => Vectors.dense(s(3).toDouble))
+    val trainingData = trainSteam.map(record => (record.key, record.value)).map(_._2).map(_.split(';')).map(s => Vectors.dense(getBytes(s)))
     //val trainingData = trainSteam.map(record => (record.key, record.value)).map(_._2)
     trainingData.print()
     val testData = testSteam.map(record => (record.key, record.value)).map(_._2).map(s => Vectors.dense(s.split(' ').map(_.toDouble)))
