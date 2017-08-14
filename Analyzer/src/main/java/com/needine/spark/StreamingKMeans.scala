@@ -16,12 +16,12 @@ import org.apache.spark.sql.SparkSession
 
 object StreamingKMeans {
   
-  val checkpointDirectory = "_1f467y8ujg3" 
+  val checkpointDirectory = "_1f6tfghDtg3" 
   
   def functionToCreateContext():StreamingContext = {
-    val conf = new SparkConf().setMaster("local[*]").setAppName("Streaming KMeans Example")
+    val conf = new SparkConf().setAppName("Streaming KMeans Example")//.setMaster("local[*]")
     val ssc = new StreamingContext(conf, Seconds(2))
-    ssc.checkpoint(checkpointDirectory)   // set checkpoint directory
+    //ssc.checkpoint(checkpointDirectory)   // set checkpoint directory
     ssc
   }
   
@@ -38,19 +38,21 @@ object StreamingKMeans {
       "enable.auto.commit" -> (false: java.lang.Boolean)
     )
     
-    val topics = Array("test", "training")
+    val topics = Array("cleanedData", "test")
     val stream = KafkaUtils.createDirectStream[String, String](
       context,
       PreferConsistent,
       Subscribe[String, String](topics, kafkaParams)
     )
     
-    val trainSteam = stream.filter(record => record.topic == "training")
+    val trainSteam = stream.filter(record => record.topic == "cleanedData")
     val testSteam = stream.filter(record => record.topic == "test")
     //testSteam.map(record => (record.topic, record.key, record.value)).print()
     
-    val trainingData = trainSteam.map(record => (record.key, record.value)).map(_._2).map(s => Vectors.dense(s.split(' ').map(_.toDouble)))
-    //trainingData.print()
+    //val trainingData = trainSteam.map(record => (record.key, record.value)).map(_._2).map(s => Vectors.dense(s.split(' ').map(_.toDouble)))
+    val trainingData = trainSteam.map(record => (record.key, record.value)).map(_._2).map(_.split(';')).map(s => Vectors.dense(s(3).toDouble))
+    //val trainingData = trainSteam.map(record => (record.key, record.value)).map(_._2)
+    trainingData.print()
     val testData = testSteam.map(record => (record.key, record.value)).map(_._2).map(s => Vectors.dense(s.split(' ').map(_.toDouble)))
 
     /*
@@ -59,8 +61,9 @@ object StreamingKMeans {
       LabeledPoint(arr(0).toDouble, Vectors.dense(arr(1).split(' ').map(_.toDouble)))    
     }
     */
+    
     val model = new StreamingKMeans()
-      .setK(3)
+      .setK(50)
       .setDecayFactor(0.05)
       .setRandomCenters(1, 0.0)
     
@@ -73,6 +76,7 @@ object StreamingKMeans {
     //val cl = clusterArray(0)
     //println(cl)
     //clusterArray.print()
+    
     res.foreachRDD { rdd =>  
       val spark = SparkSession.builder.config(rdd.sparkContext.getConf).getOrCreate()
       import spark.implicits._      
@@ -80,7 +84,6 @@ object StreamingKMeans {
       clusterArray.foreach { println }
       
     }
-    
     context.start
     context.awaitTermination()  
 
