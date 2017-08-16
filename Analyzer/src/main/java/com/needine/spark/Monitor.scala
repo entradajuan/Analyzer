@@ -3,6 +3,9 @@ package com.needine.spark
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.streaming.{OutputMode, Trigger}
 import scala.concurrent.duration._
+import java.sql.Struct
+//import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.Row
 
 object Monitor {
   def main(args: Array[String]) = {
@@ -28,17 +31,16 @@ object Monitor {
       .load()
       //.withWatermark(eventTime = "timestamp", delayThreshold = "10 seconds")
       
-    //df.printSchema()  
-    //val lines = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)").as[(String, String)].map(_._2)
     val lines = df.selectExpr("CAST(timestamp AS TIMESTAMP)", "CAST(value AS STRING)")//.select($"timestamp", $"value").withColumn("unix_arrival", unix_timestamp($"timestamp")).withColumn("unix_time_now", unix_timestamp)
     //lines.printSchema()
     
     val query = lines
-//      .groupBy("value").count()
-      //.groupBy(window($"timestamp", "10 minutes", "2 minutes"),$"value").count()
-      //.groupBy(window($"timestamp", "2 seconds", "2 seconds"),$"unix_arrival" ,$"value").count()
       .withWatermark("timestamp", "20 seconds")
-      .groupBy(window($"timestamp", "10 seconds"),$"value").count().sort($"window")
+      .groupBy(window($"timestamp", "10 seconds"),$"value").count().withColumn("end", $"window.end")
+      .select("value", "count", "end" )
+      .selectExpr("CAST(value AS STRING)", "CAST(count AS Long)" ,"CAST(end AS TIMESTAMP)" ).withColumn("end2", unix_timestamp($"end"))
+      .filter($"end2".gt(unix_timestamp - 20))
+      .sort(desc("end"))//.limit(5)
       .writeStream
 //      .trigger(Trigger.ProcessingTime(10.seconds))
       .outputMode("complete")
@@ -46,13 +48,6 @@ object Monitor {
       .format("console")
       .start()
       
-    /*
-    val query = df
-      .writeStream
-      .outputMode("append")
-      .format("console")
-      .start()        
-    */  
     query.awaitTermination()
     
     //Needine.com
