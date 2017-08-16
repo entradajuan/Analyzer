@@ -26,7 +26,7 @@ object Monitor {
       .option("kafka.bootstrap.servers", "localhost:9092,anotherhost:9092")
       .option("subscribe", "connect-test")
       .load()
-      //.withWatermark(eventTime = "timestamp", delayThreshold = "10 seconds")1
+      //.withWatermark(eventTime = "timestamp", delayThreshold = "10 seconds")
       
     //df.printSchema()  
     //val lines = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)").as[(String, String)].map(_._2)
