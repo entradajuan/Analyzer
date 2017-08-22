@@ -108,11 +108,6 @@ object ToCassandra {
     spark.stop()
     
     
-    
-    
-    
-    
-    
     //Needine.com
     //Network Traffic Status V0.2
   }
