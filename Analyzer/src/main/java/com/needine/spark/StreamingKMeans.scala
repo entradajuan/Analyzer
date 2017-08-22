@@ -82,7 +82,7 @@ object StreamingKMeans {
     */
     
     val model = new StreamingKMeans()
-      .setK(50)
+      .setK(10)
       .setDecayFactor(0.05)
       .setRandomCenters(1, 0.0)
     
