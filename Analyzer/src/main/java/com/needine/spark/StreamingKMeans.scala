@@ -21,7 +21,8 @@ object StreamingKMeans {
   val checkpointDirectory = "_1f6tfghDtg3" 
   
   def functionToCreateContext():StreamingContext = {
-    val conf = new SparkConf().setAppName("Streaming KMeans Example")//.setMaster("local[*]")
+    val conf = new SparkConf().setAppName("Streaming KMeans Example")
+//.setMaster("local[*]")
     val ssc = new StreamingContext(conf, Seconds(2))
     //ssc.checkpoint(checkpointDirectory)   // set checkpoint directory
     ssc
@@ -71,7 +72,7 @@ object StreamingKMeans {
     //val trainingData = trainSteam.map(record => (record.key, record.value)).map(_._2).map(s => Vectors.dense(s.split(' ').map(_.toDouble)))
     val trainingData = trainSteam.map(record => (record.key, record.value)).map(_._2).map(_.split(';')).map(s => Vectors.dense(getBytes(s)))
     //val trainingData = trainSteam.map(record => (record.key, record.value)).map(_._2)
-    trainingData.print()
+    //trainingData.print()
     val testData = testSteam.map(record => (record.key, record.value)).map(_._2).map(s => Vectors.dense(s.split(' ').map(_.toDouble)))
 
     /*
@@ -82,7 +83,7 @@ object StreamingKMeans {
     */
     
     val model = new StreamingKMeans()
-      .setK(10)
+      .setK(3)
       .setDecayFactor(0.05)
       .setRandomCenters(1, 0.0)
     
@@ -95,19 +96,37 @@ object StreamingKMeans {
     //val cl = clusterArray(0)
     //println(cl)
     //clusterArray.print()
-    
+    /*
     res.foreachRDD { rdd =>  
-      val spark = SparkSession.builder.config(rdd.sparkContext.getConf).getOrCreate()
+      val spark = SparkSession.builder.config(rdd.sparkContext.getConf).config("spark.cassandra.connection.host", "localhost").getOrCreate()
+      //val spark = SparkSession.builder.config(rdd.sparkContext.getConf).getOrCreate()
       import spark.implicits._      
       val clusterArray = latestModel.clusterCenters 
       clusterArray.foreach { println }
       
     }
+    */
+    
+    val wholeData = trainSteam.map(record => (record.key, record.value)).map(_._2).map(_.split(';'))//.map(s => Vectors.dense(getBytes(s)))
+    wholeData.foreachRDD{rdd =>
+      val spark = SparkSession.builder.config(rdd.sparkContext.getConf).config("spark.cassandra.connection.host", "localhost").getOrCreate()
+      //val spark = SparkSession.builder.config(rdd.sparkContext.getConf).getOrCreate()
+      import spark.implicits._      
+      rdd.map(_(0)).collect().foreach (println)
+      println("-------------------")
+      val clusterArray = latestModel.clusterCenters 
+      clusterArray.foreach { println }
+      
+    }
+    
+    
+    
+    
     context.start
     context.awaitTermination()  
 
 
-    println("Hello world!!")
+    //println("Hello world!!")
     
   }
 }
