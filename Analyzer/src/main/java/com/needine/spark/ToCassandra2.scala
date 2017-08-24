@@ -19,17 +19,33 @@ object ToCassandra2 {
       if (arr(3)=="") {
          0.0
       } else {
-        if (arr(3) matches "[\\+\\-0-9.e]+") arr(3).toDouble
-        else 0.0
+        if (arr(3) matches "[\\+\\-0-9.e]+"){
+          arr(3).toDouble
+        }
+        else {
+          0.0
+        }
       }
     }
   }
   
-  def convert2Double(arr: Array[String]):Double={ 
+  def addCeroes(s: String):String={
+    
+    s.length() match {
+      case 1 => "00".concat(s)
+      case 2 => "0".concat(s)
+      case 3 => s
+      case _ => "NADA"
+    }
+    
+  }
+  
+  def convert2Double(arr: Array[String]):Long={ 
     if(arr.length==4){
-      arr(0).concat(arr(1).concat(arr(2).concat(arr(3)))).toDouble
+      addCeroes(arr(0)).concat(addCeroes(arr(1)).concat(addCeroes(arr(2)).concat(addCeroes(arr(3))))).toLong
+      
     }else{
-      0.0
+      0
     }
   }
     
@@ -61,7 +77,6 @@ object ToCassandra2 {
       .option("kafka.bootstrap.servers", "localhost:9092,anotherhost:9092")
       .option("subscribe", "cleanedData")
       .load()
-      
     val lines = df.selectExpr("CAST(timestamp AS TIMESTAMP)", "CAST(value AS STRING)")//.select($"timestamp", $"value").withColumn("unix_arrival", unix_timestamp($"timestamp")).withColumn("unix_time_now", unix_timestamp)
     
     val originIP_TCP = lines.select($"value").as[String].map(_.split(";")).filter(arr=> arr(2)=="TCP").map(arr => (arr(0), convert2Double(arr(0).split("\\.")))).map{t=>
@@ -103,8 +118,7 @@ object ToCassandra2 {
 
     val query = packet_TCP.writeStream.queryName("StructuredStreamingDataToCassandra3").foreach(writer).start
 
-    //query.awaitTermination()
- 
+    query.awaitTermination()
     // CHECK HOW TO CREATE a Streaming DS/DF
     /*     
     val df3 = spark.read.format("org.apache.spark.sql.cassandra").options(Map( "table" -> "origin_by_ip_tcp", "keyspace" -> "network_monitor" )).load()
