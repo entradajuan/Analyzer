@@ -3,7 +3,16 @@ package com.needine.spark
 import org.apache.spark.sql.SparkSession
 
 object App1 {
-  case class Trace (ori: String, des: String, pro: String, bytes: String)
+  case class Trace (arrival: String, ori: String, des: String, pro: String, bytes: String)
+  
+  
+  def cleansingArrival(cad: String): String = {
+    if (cad == null) {return "NADA"}
+    if (cad.split("→").length < 1) {return "NADA"}
+    if (cad.split("→")(0).split(" +").length < 1) {return "NADA"}
+    if (cad.split("→")(0).split(" +").last == "") {return "NADA"}
+    cad.split("→")(0).split(" +")(1)+";"
+  }
   
   def cleansingOri(cad: String): String = {
     if (cad == null) {return "NADA"}
@@ -61,9 +70,9 @@ object App1 {
       .load()
     val lines = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)").as[(String, String)]
 
-    val packetsDS = lines.map{cad => Trace(cleansingOri(cad._2), cleansingDest(cad._2), cleansingProt(cad._2),cleansingBytes(cad._2))}
+    val packetsDS = lines.map{cad => Trace(cleansingArrival(cad._2), cleansingOri(cad._2), cleansingDest(cad._2), cleansingProt(cad._2),cleansingBytes(cad._2))}
     
-    val query = packetsDS.toDF.withColumn("x", concat($"ori",  $"des", $"pro", $"bytes"))
+    val query = packetsDS.toDF.withColumn("x", concat($"arrival", $"ori",  $"des", $"pro", $"bytes"))
       .select($"ori" as "key", $"x" as "value")
       .selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
       .writeStream

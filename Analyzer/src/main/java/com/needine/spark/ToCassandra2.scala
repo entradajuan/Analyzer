@@ -6,6 +6,7 @@ import org.apache.spark.sql.ForeachWriter
 import com.datastax.spark.connector.cql.CassandraConnector
 import com.needine.spark.Tables.Origin_By_IP_TCP
 import com.needine.spark.Tables.Packet
+import com.needine.spark.Tables.Protocol
 
 
 object ToCassandra2 {
@@ -16,11 +17,11 @@ object ToCassandra2 {
     }else if (arr.size<4) {
       0.0
     }else {
-      if (arr(3)=="") {
+      if (arr(4)=="") {
          0.0
       } else {
-        if (arr(3) matches "[\\+\\-0-9.e]+"){
-          arr(3).toDouble
+        if (arr(4) matches "[\\+\\-0-9.e]+"){
+          arr(4).toDouble
         }
         else {
           0.0
@@ -40,7 +41,7 @@ object ToCassandra2 {
     
   }
   
-  def convert2Double(arr: Array[String]):Long={ 
+  def convert2Long(arr: Array[String]):Long={ 
     if(arr.length==4){
       addCeroes(arr(0)).concat(addCeroes(arr(1)).concat(addCeroes(arr(2)).concat(addCeroes(arr(3))))).toLong
       
@@ -79,19 +80,36 @@ object ToCassandra2 {
       .load()
     val lines = df.selectExpr("CAST(timestamp AS TIMESTAMP)", "CAST(value AS STRING)")//.select($"timestamp", $"value").withColumn("unix_arrival", unix_timestamp($"timestamp")).withColumn("unix_time_now", unix_timestamp)
     
-    val originIP_TCP = lines.select($"value").as[String].map(_.split(";")).filter(arr=> arr(2)=="TCP").map(arr => (arr(0), convert2Double(arr(0).split("\\.")))).map{t=>
+    val originIP_TCP = lines.select($"value").as[String].map(_.split(";")).filter(arr=> arr(3)=="TCP").map(arr => (arr(1), convert2Long(arr(1).split("\\.")))).map{t=>
         Origin_By_IP_TCP(t._1, t._2)
       }
     
-    val packet_TCP = lines.select($"value").as[String].map(_.split(";")).filter(arr=> arr(2)=="TCP")
-      .map(arr => (convert2Double(arr(0).split("\\.")), convert2Double(arr(1).split("\\.")), getBytes(arr)  ) )
+    val packet_TCP = lines.select($"value").as[String].map(_.split(";")).filter(arr=> arr(3)=="TCP")
+      .map(arr => (arr(0), convert2Long(arr(1).split("\\.")), convert2Long(arr(2).split("\\.")), getBytes(arr)  ) )
       .map{t =>
-        Packet(System.currentTimeMillis() / 1000L,t._1,t._2,t._3)
+        Packet(t._1,t._2,t._3,t._4)
       } 
     
+    val protocols = lines.select($"value").as[String].map(_.split(";")).map(arr => (arr(3), arr(3))).map{t=>
+        Protocol(t._1, t._2)
+      }
     
 
     // This Foreach sink writer writes the output to cassandra.
+
+    val writer3 = new ForeachWriter[Tables.Protocol] {
+      override def open(partitionId: Long, version: Long) = true
+      override def process(value: Tables.Protocol) = {
+        conn.withSessionDo { session =>
+            session.execute(Statements.saveProtocol(value.name, value.ref))
+        }
+      }
+      override def close(errorOrNull: Throwable) = {}
+    }
+
+    val query3 = protocols.writeStream.queryName("StructuredStreamingDataToCassandra3").foreach(writer3).start
+    
+    
     val writer2 = new ForeachWriter[Tables.Origin_By_IP_TCP] {
       override def open(partitionId: Long, version: Long) = true
       override def process(value: Tables.Origin_By_IP_TCP) = {
@@ -116,7 +134,7 @@ object ToCassandra2 {
       override def close(errorOrNull: Throwable) = {}
     }
 
-    val query = packet_TCP.writeStream.queryName("StructuredStreamingDataToCassandra3").foreach(writer).start
+    val query = packet_TCP.writeStream.queryName("StructuredStreamingDataToCassandra1").foreach(writer).start
 
     query.awaitTermination()
     // CHECK HOW TO CREATE a Streaming DS/DF
