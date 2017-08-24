@@ -88,7 +88,7 @@ object ToCassandra {
     
     val ds = df2/*.select( $"time", $"bytes")*/.as[Tables.Packet]
     //ds.printSchema()
-    
+    /*
     // This Foreach sink writer writes the output to cassandra.
     import org.apache.spark.sql.ForeachWriter
     val writer = new ForeachWriter[Tables.Packet] {
@@ -105,6 +105,8 @@ object ToCassandra {
       ds.writeStream.queryName("StructuredStreamingDataToCassandra").foreach(writer).start
 
     query.awaitTermination()
+    
+    */
     spark.stop()
     
     
