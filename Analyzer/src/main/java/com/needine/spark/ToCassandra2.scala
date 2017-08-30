@@ -90,7 +90,7 @@ object ToCassandra2 {
         Packet(t._1,t._2,t._3,t._4)
       } 
     
-    val protocols = lines.select($"value").as[String].map(_.split(";")).map(arr => (arr(3), arr(3))).map{t=>
+    val protocols = lines.select($"value").as[String].map(_.split(";")).map(arr => (arr(3), arr(3).toInt.toString())).map{t=>
         Protocol(t._1, t._2)
       }
     

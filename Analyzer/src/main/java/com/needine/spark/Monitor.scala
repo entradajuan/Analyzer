@@ -8,7 +8,9 @@ import java.sql.Struct
 import org.apache.spark.sql.Row
 
 object Monitor {
+  
   def main(args: Array[String]) = {
+    
     val spark = SparkSession
       .builder()
       .appName("Structured Streaming Network Traffic Analysis")

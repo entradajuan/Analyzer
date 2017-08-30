@@ -21,8 +21,7 @@ object StreamingKMeans {
   val checkpointDirectory = "_1f6tfghDtg3" 
   
   def functionToCreateContext():StreamingContext = {
-    val conf = new SparkConf().setAppName("Streaming KMeans Example")
-//.setMaster("local[*]")
+    val conf = new SparkConf().setAppName("Streaming KMeans Example").setMaster("local[*]")
     val ssc = new StreamingContext(conf, Seconds(2))
     //ssc.checkpoint(checkpointDirectory)   // set checkpoint directory
     ssc
@@ -35,10 +34,10 @@ object StreamingKMeans {
     }else if (arr.size<4) {
       0.0
     }else {
-      if (arr(3)=="") {
+      if (arr(4)=="") {
          0.0
       } else {
-        if (arr(3) matches "[\\+\\-0-9.e]+") arr(3).toDouble
+        if (arr(4) matches "[\\+\\-0-9.e]+") arr(4).toDouble
         else 0.0
       }
     }
@@ -83,8 +82,8 @@ object StreamingKMeans {
     */
     
     val model = new StreamingKMeans()
-      .setK(3)
-      .setDecayFactor(0.05)
+      .setK(5)
+      .setDecayFactor(0.95)
       .setRandomCenters(1, 0.0)
     
     model.trainOn(trainingData)
@@ -112,10 +111,15 @@ object StreamingKMeans {
       val spark = SparkSession.builder.config(rdd.sparkContext.getConf).config("spark.cassandra.connection.host", "localhost").getOrCreate()
       //val spark = SparkSession.builder.config(rdd.sparkContext.getConf).getOrCreate()
       import spark.implicits._      
-      rdd.map(_(0)).collect().foreach (println)
-      println("-------------------")
+      //rdd.map(_(0)).collect().foreach (println)
+      println("Clusters:")
       val clusterArray = latestModel.clusterCenters 
       clusterArray.foreach { println }
+      
+      println("Clusters weights:")
+      latestModel.clusterWeights.foreach { println }
+      
+
       
     }
     
