@@ -90,13 +90,14 @@ object ToCassandra2 {
         Packet(t._1,t._2,t._3,t._4)
       } 
     
+    /*
     val protocols = lines.select($"value").as[String].map(_.split(";")).map(arr => (arr(3), arr(3).toInt.toString())).map{t=>
         Protocol(t._1, t._2)
       }
     
 
     // This Foreach sink writer writes the output to cassandra.
-
+    
     val writer3 = new ForeachWriter[Tables.Protocol] {
       override def open(partitionId: Long, version: Long) = true
       override def process(value: Tables.Protocol) = {
@@ -108,7 +109,7 @@ object ToCassandra2 {
     }
 
     val query3 = protocols.writeStream.queryName("StructuredStreamingDataToCassandra3").foreach(writer3).start
-    
+    */
     
     val writer2 = new ForeachWriter[Tables.Origin_By_IP_TCP] {
       override def open(partitionId: Long, version: Long) = true
