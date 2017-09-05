@@ -67,9 +67,22 @@ object ToCassandra2 {
         }
       }
     }
-      
   }
   
+  def hashProtocol (s : String): (String, String) = {
+    val arr = s.split(";")
+    if ((arr==null) ){
+      ("NADA","0")
+    }else if (arr.size!=5) {
+      ("NADA","0")
+    }else {
+      if (arr(3)=="") {
+         ("NADA","0")
+      } else {
+        (arr(3), arr(3).hashCode().toString())
+      }
+    }
+  }
   
   def main(args: Array[String]) = {
     
@@ -112,8 +125,12 @@ object ToCassandra2 {
       } 
     
     /*
-    val protocols = lines.select($"value").as[String].map(_.split(";")).map(arr => (arr(3), arr(3).toInt.toString())).map{t=>
-        Protocol(t._1, t._2)
+    val protocols = lines.select($"value").as[String].map(_.split(";")).map(arr => (arr(3), arr(3).hashCode())).map{t=>
+        Protocol(t._1, t._2.toString())
+      }
+    */
+    val protocols = lines.select($"value").as[String].map(hashProtocol(_)).map{t=>
+        Protocol(t._1, t._2.toString())
       }
     
 
@@ -130,7 +147,7 @@ object ToCassandra2 {
     }
 
     val query3 = protocols.writeStream.queryName("StructuredStreamingDataToCassandra3").foreach(writer3).start
-    */
+    
     
     val writer2 = new ForeachWriter[Tables.Origin_By_IP_TCP] {
       override def open(partitionId: Long, version: Long) = true
