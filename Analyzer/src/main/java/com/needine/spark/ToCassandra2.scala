@@ -50,6 +50,27 @@ object ToCassandra2 {
     }
   }
     
+  def isTCP (arr: Array[String]): Boolean = {
+    if ((arr==null) ){
+      false
+    }else if (arr.size!=5) {
+      false
+    }else {
+      if (arr(4)=="") {
+         false
+      } else {
+        if (arr(3)=="TCP"){
+          true
+        }
+        else {
+          false
+        }
+      }
+    }
+      
+  }
+  
+  
   def main(args: Array[String]) = {
     
     val spark = SparkSession.builder
@@ -80,11 +101,11 @@ object ToCassandra2 {
       .load()
     val lines = df.selectExpr("CAST(timestamp AS TIMESTAMP)", "CAST(value AS STRING)")//.select($"timestamp", $"value").withColumn("unix_arrival", unix_timestamp($"timestamp")).withColumn("unix_time_now", unix_timestamp)
     
-    val originIP_TCP = lines.select($"value").as[String].map(_.split(";")).filter(arr=> arr(3)=="TCP").map(arr => (arr(1), convert2Long(arr(1).split("\\.")))).map{t=>
+    val originIP_TCP = lines.select($"value").as[String].map(_.split(";")).filter(isTCP(_)).map(arr => (arr(1), convert2Long(arr(1).split("\\.")))).map{t=>
         Origin_By_IP_TCP(t._1, t._2)
       }
     
-    val packet_TCP = lines.select($"value").as[String].map(_.split(";")).filter(arr=> arr(3)=="TCP")
+    val packet_TCP = lines.select($"value").as[String].map(_.split(";")).filter(isTCP(_))
       .map(arr => (arr(0), convert2Long(arr(1).split("\\.")), convert2Long(arr(2).split("\\.")), getBytes(arr)  ) )
       .map{t =>
         Packet(t._1,t._2,t._3,t._4)
