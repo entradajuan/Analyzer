@@ -5,8 +5,9 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.ForeachWriter
 import com.datastax.spark.connector.cql.CassandraConnector
 import com.needine.spark.Tables.Origin_By_IP_TCP
-import com.needine.spark.Tables.Packet
+//import com.needine.spark.Tables.Packet
 import com.needine.spark.Tables.Protocol
+import com.needine.spark.Tables.TCPPacket
 
 
 object ToCassandra2 {
@@ -121,14 +122,11 @@ object ToCassandra2 {
     val packet_TCP = lines.select($"value").as[String].map(_.split(";")).filter(isTCP(_))
       .map(arr => (arr(0), convert2Long(arr(1).split("\\.")), convert2Long(arr(2).split("\\.")), getBytes(arr)  ) )
       .map{t =>
-        Packet(t._1,t._2,t._3,t._4)
+        //TCPPacket(t._1,t._2,t._3,t._4)
+        TCPPacket(t._1,t._2,t._3,t._4)
       } 
     
-    /*
-    val protocols = lines.select($"value").as[String].map(_.split(";")).map(arr => (arr(3), arr(3).hashCode())).map{t=>
-        Protocol(t._1, t._2.toString())
-      }
-    */
+
     val protocols = lines.select($"value").as[String].map(hashProtocol(_)).map{t=>
         Protocol(t._1, t._2.toString())
       }
@@ -163,11 +161,11 @@ object ToCassandra2 {
     //query2.awaitTermination()
     
 
-    val writer = new ForeachWriter[Tables.Packet] {
+    val writer = new ForeachWriter[Tables.TCPPacket] {
       override def open(partitionId: Long, version: Long) = true
-      override def process(value: Tables.Packet) = {
+      override def process(value: Tables.TCPPacket) = {
         conn.withSessionDo { session =>
-          session.execute(Statements.savePacket(value.time, value.origen, value.destiny, value.bytes))
+          session.execute(Statements.saveTCPPacket(value.time, value.origen, value.destiny, value.bytes))
         }
       }
       override def close(errorOrNull: Throwable) = {}

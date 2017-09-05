@@ -86,7 +86,7 @@ object ToCassandra {
     query.awaitTermination()
     */
     
-    val ds = df2/*.select( $"time", $"bytes")*/.as[Tables.Packet]
+    //val ds = df2/*.select( $"time", $"bytes")*/.as[Tables.Packet]
     //ds.printSchema()
     /*
     // This Foreach sink writer writes the output to cassandra.

@@ -4,7 +4,7 @@ import java.sql.Timestamp
 
 object Tables {
   
-  case class Packet(time: String, origen:Long, destiny: Long, bytes: Double)extends Serializable
+  case class TCPPacket(time: String, origen:Long, destiny: Long, bytes: Double)extends Serializable
   
   case class Protocol(name: String, ref: String)extends Serializable
   
